@@ -1,0 +1,19 @@
+# Rust compilation artifacts
+/target/
+
+# Local data files (Our custom NoSQL Write-Ahead Log)
+*.log
+flags.log
+
+# IDE and Editor configurations
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# OS generated files
+.DS_Store
+Thumbs.db
