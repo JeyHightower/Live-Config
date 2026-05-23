@@ -5,6 +5,8 @@ use crate::storage::StorageEngine;
 use axum::{
     routing::{get, post},
     Router,
+    extract::State,
+    Json,
 };
 
 
@@ -16,6 +18,9 @@ pub struct AppState {
     pub storage: Arc<StorageEngine>,
     pub broadcaster: Tx,
 }
+
+
+
 
 #[tokio::main]
 async fn main() {
@@ -39,3 +44,25 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 
 }
+
+async fn get_flags_handler(
+    State(state): State<AppState>, 
+) -> Json<Vec<FeatureFlag>> {
+    let flags = state.storage.get_all_flags();
+    Json(flags)
+}
+
+
+
+async fn set_flag_handler(
+    State(state): State<AppState>,
+    Json(incoming_flag): Json<FeatureFlag>,
+) -> &'static str {
+    let flag_name = incoming_flag.name.clone();
+    state.storage.set_flag(incoming_flag);
+    
+    let _ = state.broadcaster.send(flag_name);
+
+    "Flag updated successfully!"
+}
+

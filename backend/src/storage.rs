@@ -56,4 +56,10 @@ impl StorageEngine {
 
         cache_lock.get(name).cloned()
     }
+
+    pub fn get_all_flags(&self) -> Vec<FeatureFlag>{
+        let cache_lock = self.cache.read().unwrap();
+        cache_lock.values().cloned().collect()
+
+    }
 }
