@@ -17,3 +17,7 @@ flags.log
 # OS generated files
 .DS_Store
 Thumbs.db
+
+# Personal notes and files
+note.md
+
