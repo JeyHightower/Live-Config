@@ -1,4 +1,4 @@
-use crate::FeatureFlag;
+use shared::FeatureFlag;
 use std::collections::HashMap;
 use std::fs::File;
 use std::sync::{Arc, RwLock};
@@ -20,14 +20,14 @@ impl StorageEngine {
             .append(true)
             .read(true)
             .open(path)
-            .expect("Failed to open or create the log file")
+            .expect("Failed to open or create the log file");
 
         let mut raw_map =  HashMap::new();
         let reader = BufReader::new(&file);
         for line in reader.lines(){
             if let Ok(text) = line {
                 if let Ok(flag) = serde_json::from_str::<FeatureFlag>(&text){
-                    raw.map.insert(flag.name.clone(), flag);
+                    raw_map.insert(flag.name.clone(), flag);
                 }
             }
         }
