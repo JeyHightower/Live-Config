@@ -1,8 +1,0 @@
-[package]
-name = "frontend"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-# Your WebAssembly/Frontend framework dependencies go here
-shared = { path = "../shared" }

@@ -3,6 +3,5 @@
 members = [
     "backend",
     "client_sdk",
-    "frontend",
     "shared",
 ]
