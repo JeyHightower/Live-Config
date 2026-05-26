@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Config Engine Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #10b981;
+            --border: #334155;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
+        }
+
+        h1 { margin: 0; font-size: 2rem; color: var(--text-main); }
+        p { margin: 0.5rem 0 0 0; color: var(--text-muted); }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .card h2 { margin-top: 0; font-size: 1.25rem; margin-bottom: 1.5rem; }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 0.625rem;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-main);
+            box-sizing: border-box;
+            font-size: 1  rem;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s;
+        }
+
+        button:hover { background-color: var(--primary-hover); }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge-enabled { background-color: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .badge-disabled { background-color: rgba(148, 163, 184, 0.2); color: var(--text-muted); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Control Room</h1>
+        <p>Manage distributed application feature states in real-time</p>
+    </header>
+
+    <div class="layout">
+        <div class="card">
+            <h2>Update Feature Flag</h2>
+            <form id="flag-form">
+                <div class="form-group">
+                    <label for="flag-name">Flag Name</label>
+                    <input type="text" id="flag-name" placeholder="e.g., premium_features" required>
+                </div>
+                <div class="form-group">
+                    <label for="flag-status">State Configuration</label>
+                    <select id="flag-status">
+                        <option value="false">Disabled (false)</option>
+                        <option value="true">Enabled (true)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="flag-value">Variant Value (String)</label>
+                    <input type="text" id="flag-value" placeholder="e.g., v2_alpha" required>
+                </div>
+                <div class="form-group">
+                    <label for="flag-version">Version Counter</label>
+                    <input type="number" id="flag-version" value="1" min="1" required>
+                </div>
+                <button type="submit">Publish Rule State</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Active Active Registry</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Flag Name</th>
+                        <th>Variant Value</th>
+                        <th>Version</th>
+                    </tr>
+                </thead>
+                <tbody id="flags-table-body">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const form = document.getElementById('flag-form');
+    const tableBody = document.getElementById('flags-table-body');
+
+    // Helper to build out standard structural table rows cleanly
+    function createRowHtml(flag) {
+        const badgeClass = flag.is_enabled ? 'badge-enabled' : 'badge-disabled';
+        const badgeText = flag.is_enabled ? 'Active' : 'Off';
+        
+        return `
+            <tr id="row-${flag.name}">
+                <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+                <td style="font-family: monospace; font-weight: 600;">${flag.name}</td>
+                <td><code style="background: #0f172a; padding: 2px 6px; border-radius: 4px;">${flag.value}</code></td>
+                <td>${flag.version}</td>
+            </tr>
+        `;
+    }
+
+    // INTERACTION A: Hydrate the table on startup via REST API
+    async function fetchBaselineFlags() {
+        try {
+            const res = await fetch('/api/flags');
+            const flags = await res.json();
+            tableBody.innerHTML = flags.map(flag => createRowHtml(flag)).join('');
+        } catch (err) {
+            console.error("Failed to load baseline flags:", err);
+        }
+    }
+
+    // INTERACTION B: Dispatch form payload via HTTP POST
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const payload = {
+            name: document.getElementById('flag-name').value.trim(),
+            is_enabled: document.getElementById('flag-status').value === 'true',
+            value: document.getElementById('flag-value').value.trim(),
+            version: parseInt(document.getElementById('flag-version').value, 10)
+        };
+
+        try {
+            const response = await fetch('/api/flags', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                // Increment version automatically for ease of testing
+                document.getElementById('flag-version').value = payload.version + 1;
+            } else {
+                alert("Server rejected the rule update.");
+            }
+        } catch (err) {
+            console.error("Network communication error:", err);
+        }
+    });
+
+    // INTERACTION C: Listen to real-time events via persistent WebSocket connection
+    function connectWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const wsUrl = `${protocol}${window.location.host}/ws`;
+        const socket = new WebSocket(wsUrl);
+
+        socket.onmessage = (event) => {
+            try {
+                const updatedFlag = JSON.parse(event.data);
+                const existingRow = document.getElementById(`row-${updatedFlag.name}`);
+                const newRowHtml = createRowHtml(updatedFlag);
+
+                if (existingRow) {
+                    // Instantly patch the row in memory without rewriting the table
+                    existingRow.outerHTML = newRowHtml;
+                } else {
+                    // Prepend new flags to the top of the table
+                    tableBody.insertAdjacentHTML('afterbegin', newRowHtml);
+                }
+            } catch (err) {
+                console.error("Failed to parse incoming broadcast frame:", err);
+            }
+        };
+
+        socket.onclose = () => {
+            console.log("WebSocket dropped. Reconnecting in 2 seconds...");
+            setTimeout(connectWebSocket, 2000);
+        };
+    }
+
+    // Trigger full baseline initialization sequence
+    fetchBaselineFlags();
+    connectWebSocket();
+</script>
+</body>
+</html>

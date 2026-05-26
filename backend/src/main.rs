@@ -13,6 +13,7 @@ use axum::{
     Json,
     response::IntoResponse,
 };
+use tower_http::services::ServeDir;
 
 
 
@@ -41,6 +42,7 @@ async fn main() {
     let app = Router::new()
         .route("/api/flags", get(get_flags_handler).post(set_flag_handler))
         .route("/ws", get(websocket_handler))
+        .fallback_service(ServeDir::new("static"))
         .with_state(state);
 
 
