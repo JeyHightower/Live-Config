@@ -13,11 +13,11 @@ pub struct StorageEngine {
 impl StorageEngine {
     pub fn new(path: &str) -> Self {
         use std::fs::OpenOptions;
-        use std::io::{BufRead, BufReader};
+        use std::io::{BufRead, BufReader, Seek, SeekFrom};
 
-        let file = OpenOptions::new()
+        let mut file = OpenOptions::new()
             .create(true)
-            .append(true)
+            .write(true)
             .read(true)
             .open(path)
             .expect("Failed to open or create the log file");
@@ -32,6 +32,8 @@ impl StorageEngine {
             }
         }
 
+        let _ = file.seek(SeekFrom::End(0));
+
         Self {
             cache: Arc::new(RwLock::new(raw_map)),
             log_file: Arc::new(RwLock::new(file)),
@@ -40,6 +42,7 @@ impl StorageEngine {
     }
 
     pub fn set_flag(&self, flag: FeatureFlag){
+        //unlock cache and log_file 
         let mut cache_lock = self.cache.write().unwrap();
         let mut file_lock = self.log_file.write().unwrap();
 

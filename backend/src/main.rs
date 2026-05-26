@@ -16,7 +16,7 @@ use axum::{
 
 
 
-type Tx = broadcast::Sender<String>;
+type Tx = broadcast::Sender<FeatureFlag>;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -30,7 +30,7 @@ pub struct AppState {
 #[tokio::main]
 async fn main() {
     let storage_engine = StorageEngine::new("flags.log");
-    let (tx, _rx) = broadcast::channel::<String>(100);
+    let (tx, _rx) = broadcast::channel::<FeatureFlag>(100);
 
 
     let state = AppState {
@@ -63,10 +63,9 @@ async fn set_flag_handler(
     State(state): State<AppState>,
     Json(incoming_flag): Json<FeatureFlag>,
 ) -> &'static str {
-    let flag_name = incoming_flag.name.clone();
-    state.storage.set_flag(incoming_flag);
+    state.storage.set_flag(incoming_flag.clone());
     
-    let _ = state.broadcaster.send(flag_name);
+    let _ = state.broadcaster.send(incoming_flag);
 
     "Flag updated successfully!"
 }
@@ -93,8 +92,7 @@ async fn handle_socket(mut socket: WebSocket, state: AppState){
         }
     }
 
-    while let Ok(updated_flag_name) = rx.recv().await {
-        if let Some(flag) = state.storage.get_flag(&updated_flag_name){
+    while let Ok(flag) = rx.recv().await {
             if let Ok(json_text) = serde_json::to_string(&flag){
                 if socket.send(Message::Text(json_text)).await.is_err() { 
                     break;
@@ -102,4 +100,3 @@ async fn handle_socket(mut socket: WebSocket, state: AppState){
             }
         }
     }
-}

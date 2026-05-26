@@ -3,7 +3,7 @@ use serde::{Serialize, Deserialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FeatureFlag {
     pub name: String,
-    pub enabled: bool,
+    pub is_enabled: bool,
     pub value: String,
     pub version: u32,
 }
